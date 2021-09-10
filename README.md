@@ -1,1 +1,0 @@
-# nelsongaldeman.github.io
