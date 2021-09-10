@@ -1,1 +1,126 @@
+<html>
+    <head>
+        <script src="https://cdn.jsdelivr.net/gh/ethereum/web3.js/dist/web3.min.js"></script>
+        <script type="text/javascript">
 
+            const kovanChainId = "0x2a";
+            const contractAddress = "0xee067738A18C8ff49e3Fe34E9b3622744B1E71ab";
+            const ERC20ABI = [{"constant":true,"inputs":[],"name":"name","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_spender","type":"address"},{"name":"_value","type":"uint256"}],"name":"approve","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"totalSupply","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_from","type":"address"},{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transferFrom","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"symbol","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transfer","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[{"name":"_owner","type":"address"},{"name":"_spender","type":"address"}],"name":"allowance","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"payable":true,"stateMutability":"payable","type":"fallback"},{"anonymous":false,"inputs":[{"indexed":true,"name":"owner","type":"address"},{"indexed":true,"name":"spender","type":"address"},{"indexed":false,"name":"value","type":"uint256"}],"name":"Approval","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"from","type":"address"},{"indexed":true,"name":"to","type":"address"},{"indexed":false,"name":"value","type":"uint256"}],"name":"Transfer","type":"event"}];
+            const ContractABI = [{"inputs":[{"internalType":"contract ILendingPoolAddressesProvider","name":"aaveProvider","type":"address"},{"internalType":"contract IProtocolDataProvider","name":"aaveDataProvider","type":"address"},{"internalType":"contract IUniswapV2Router02","name":"uniRouter","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"","type":"address"},{"indexed":false,"internalType":"uint256","name":"","type":"uint256"}],"name":"Received","type":"event"},{"inputs":[],"name":"AAVE_DATA_PROVIDER","outputs":[{"internalType":"contract IProtocolDataProvider","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"AAVE_LENDING_POOL","outputs":[{"internalType":"contract ILendingPool","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"UNIV2_FACTORY","outputs":[{"internalType":"contract IUniswapV2Factory","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"UNIV2_ROUTER","outputs":[{"internalType":"contract IUniswapV2Router02","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"asset","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"aaveDeposit","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"asset","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"aaveWithdraw","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"asset","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"moveAaveToUniswap","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"address","name":"asset","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"moveAllAaveToUniswap","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"address","name":"asset","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"moveAllUniswapToAave","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"asset","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"moveUniswapToAave","outputs":[],"stateMutability":"nonpayable","type":"function"},{"stateMutability":"payable","type":"receive"}];
+
+            const daiWethPoolUniswap = "0xBbB8eeA618861940FaDEf3071e79458d4c2B42e3";
+            const daiAddress = "0xFf795577d9AC8bD7D90Ee22b6C1703490b6512FD";
+
+            // this can actually be fetched using daiAddress, it shouldn't be hardcoded
+            const aDaiAddress = "0xdcf0af9e59c002fa3aa091a46196b37530fd48a8";
+
+            let account;
+            let daiToken;
+            let aDaiToken;
+            let daiWethPool;
+            let contract;
+
+            const load = async () => {
+                if (typeof window.ethereum === 'undefined') {
+                    alert('Metamask not installed');
+                }
+
+                document.getElementById("contract").innerHTML = contractAddress;
+                document.getElementById("token").innerHTML = daiAddress;
+
+                const accounts = await window.ethereum.request({method:'eth_requestAccounts'});
+                account = accounts[0];
+
+                const chainId = await window.ethereum.request({method:'eth_chainId'});
+
+                if (chainId !== kovanChainId) {
+                    alert('Wrong chain selected - Please change to Kovan');
+                    return;
+                }
+
+                const web3 = new window.Web3(window.ethereum);
+                daiToken = new web3.eth.Contract(ERC20ABI, daiAddress);
+                aDaiToken = new web3.eth.Contract(ERC20ABI, aDaiAddress);
+                daiWethPool = new web3.eth.Contract(ERC20ABI, daiWethPoolUniswap);
+                contract = new web3.eth.Contract(ContractABI, contractAddress);
+
+                let daiBalance = await daiToken.methods.balanceOf(account).call();
+                let daiAllowance = await daiToken.methods.allowance(account, contractAddress).call();
+                document.getElementById('dai').innerHTML = Web3.utils.fromWei(daiBalance) + ' - Approved? ' + (daiAllowance > 0 ? 'Yes' : 'No');
+
+                let aDaiBalance = await aDaiToken.methods.balanceOf(account).call();
+                let aDaiAllowance = await aDaiToken.methods.allowance(account, contractAddress).call();
+                document.getElementById('adai').innerHTML = Web3.utils.fromWei(aDaiBalance) + ' - Approved? ' + (aDaiAllowance > 0 ? 'Yes' : 'No');
+
+                let poolBalance = await daiWethPool.methods.balanceOf(account).call();
+                let poolAllowance = await daiWethPool.methods.allowance(account, contractAddress).call();
+                document.getElementById('pool').innerHTML = Web3.utils.fromWei(poolBalance) + ' - Approved? ' + (poolAllowance > 0 ? 'Yes' : 'No');
+
+                window.ethereum.on('chainChanged', handleChainChanged);
+            };
+
+            function handleChainChanged(_chainId) {
+                window.location.reload();
+            }
+
+            function approve(token) {
+                const amount = new window.Web3.utils.BN((100 * 10**18).toString());
+                token.methods.approve(contractAddress, amount).send({from:account});
+            }
+
+            function deposit() {
+                const amount = new window.Web3.utils.BN((10 * 10**18).toString());
+                contract.methods.aaveDeposit(daiAddress, amount).send({from:account});
+            }
+
+            function moveToUniswap() {
+                const amount = new window.Web3.utils.BN((10 * 10**18).toString());
+                let deadline = Math.floor(Date.now() / 1000) + 3600;
+
+                // fixed value to cover the eth part of the liquidity - non used ether goes back to wallet
+                const eth = new window.Web3.utils.BN((10**16).toString());
+                contract.methods.moveAaveToUniswap(daiAddress, amount, deadline).send({from:account, value:eth});
+            }
+
+            function moveToAave() {
+                if (!confirm("I don't work! But you can still try me")) {
+                    return;
+                }
+
+                let deadline = Math.floor(Date.now() / 1000) + 3600;
+                contract.methods.moveAllUniswapToAave(daiAddress, deadline).send({from:account});
+            }
+
+            function withdraw() {
+                const amount = new window.Web3.utils.BN((10 * 10**18).toString());
+                contract.methods.aaveWithdraw(daiAddress, amount).send({from:account});
+            }
+
+        </script>
+    </head>
+    <body onload="load()">
+        Contract: <div id="contract" style="display:inline;"></div>
+        <br>
+        Token: <div id="token" style="display:inline;"></div>
+        <br>
+        DAI: <div id="dai" style="display:inline;">Loading...</div>
+        <br>
+        aDAI: <div id="adai" style="display:inline;">Loading...</div>
+        <br>
+        DAI/ETH Pool: <div id="pool" style="display:inline;">Loading...</div>
+        <br>
+        <button onClick="approve(daiToken)">Approve DAI</button>
+        <br>
+        <button onClick="approve(aDaiToken)">Approve aDAI</button>
+        <br>
+        <button onClick="approve(daiWethPool)">Approve DAI/WETH Pool</button>
+        <br>
+        <button onClick="deposit()">Deposit 10 DAI - AAVE</button>
+        <br>
+        <button onClick="moveToUniswap()">AAVE to Uniswap</button>
+        <br>
+        <button onClick="moveToAave()">Uniswap to AAVE</button>
+        <br>
+        <button onClick="withdraw()">Withdraw 10 DAI - AAVE</button>
+    </body>
+</html>
